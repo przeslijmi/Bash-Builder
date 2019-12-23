@@ -3,7 +3,7 @@
 # Builder bash App by @przeslijmi.
 #
 # @author  przeslijmi@gmail.com
-# @version v2.0
+# @version v2.1.0
 #
 # # Usage
 # After filling up settings in LVD section call in bash:
@@ -22,7 +22,7 @@ function showHelp() {
   echo "=============== Show Help ==> started"
   echo "";
 
-  echo "This is @przeslijmi Bash Builder v1.1"
+  echo "This is @przeslijmi Bash Builder v2.1.0"
   echo "";
 
   echo "The following params can be used:"
