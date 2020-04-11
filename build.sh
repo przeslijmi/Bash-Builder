@@ -3,10 +3,10 @@
 # Builder bash App by @przeslijmi.
 #
 # @author  przeslijmi@gmail.com
-# @version v2.1.0
+# @version v2.2.0
 #
 # # Usage
-# After filling up settings in LVD section call in bash:
+# After filling up settings in build.sh.config section call in bash:
 #
 # ```
 # bash build.sh -help
@@ -22,21 +22,26 @@ function showHelp() {
   echo "=============== Show Help ==> started"
   echo "";
 
-  echo "This is @przeslijmi Bash Builder v2.1.0"
+  echo "This is @przeslijmi Bash Builder v2.2.0"
   echo "";
 
-  echo "The following params can be used:"
+  echo "The following operations can be performed:"
   echo "  -s, --sniff, --sniffs, --sniffing   Start PHP Code Sniffer"
   echo "  -t, --test, --tests, --testing      Start PHP Unit Testing"
   echo "  -m, --sami                          Start PHP Sami Documentation generation"
   echo "  -z, --zip                           ZIP code, sami docs and code coverage"
-  echo "  -g, --git                           Send to git repo (and add tags)"
+  echo "  -g, --git                           Send to git repo (and add tags basing on composer.json)"
   echo "  -st, -stm, -stmz, -stmzg            Joined commands from above"
   echo "  -a, --all                           Execute all commands (equal to stmzg)"
   echo "  -h, -v, --help                      Show this screen"
-
   echo "";
-  echo "<============== Show Help === finished"
+
+  echo "The following extra params can be used:"
+  echo "  -sniffUri    Alternative URI settings for Sniffing"
+  echo "  -phputFilter Filter param for PHP Unit Testing"
+  echo "";
+
+  echo "<============== Show Help <== finished"
   echo "";
 }
 
@@ -46,10 +51,25 @@ function callPhpCodeSniffing() {
   # Inform.
   echo "";
   echo "=============== PHPCodeSniffing ==> started"
-  echo "";
+  echo "==";
+
+  ## Find uri.
+  if [ "$PARAM_SNIFF_URI" = false ]
+  then
+    URI="$DIR/tests $DIR/src";
+  else
+    URI=$DIR/$PARAM_SNIFF_URI;
+  fi
+
+  ## Info on command.
+  echo "== INFO ON COMMANDS USED";
+  echo "cd" $DIR
+  echo $PHPCS_PATH --standard=phpcs.xml --report-file=.phpcs.txt $URI;
+  echo "== END INFO";
+  echo "==";
 
   # Call PHP code sniffer.
-  php $PHPCS_PATH --standard=$DIR/phpcs.xml --report-file=$DIR/.phpcs.txt $DIR/src $DIR/tests
+  php $PHPCS_PATH --standard=$DIR/phpcs.xml --report-file=$DIR/.phpcs.txt $URI
 
   # Check if there were any errors.
   PHPCS_REPORT_SIZE=$(stat -c%s "$DIR/.phpcs.txt")
@@ -57,9 +77,9 @@ function callPhpCodeSniffing() {
   # If there were - inform about it.
   if [ $PHPCS_REPORT_SIZE -gt 2 ]
   then
-      echo "Errors found in PHPCS ($PHPCS_REPORT_SIZE) "
-      cat $DIR/.phpcs.txt
-      exit 1
+    echo "Errors found in PHPCS ($PHPCS_REPORT_SIZE) "
+    cat $DIR/.phpcs.txt
+    exit 1
   fi
 
   # Delete report file.
@@ -67,7 +87,7 @@ function callPhpCodeSniffing() {
 
   # Inform.
   echo "";
-  echo "<============== PHPCodeSniffing === finished"
+  echo "<============== PHPCodeSniffing <== finished"
   echo "";
 }
 
@@ -79,9 +99,23 @@ function callPhpUnitTesting() {
   echo "=============== PHPUnit ==> started"
   echo "";
 
+  ## Find filter param.
+  if [ "$PARAM_PHPUNIT_FILTER" != "" ]
+  then
+    EXTRA_PARAMS=" --filter '$PARAM_PHPUNIT_FILTER'";
+  fi
+
+  ## Info on command.
+  echo "== INFO ON COMMANDS USED";
+  echo "cd ../../../"
+  echo "php $PHPUNITPHAR_PATH -c $DIR/phpunit.xml $EXTRA_PARAMS"
+  echo "== END INFO";
+  echo "==";
+
   # Call PHP Unit.
   cd "../../../"
-  php $PHPUNITPHAR_PATH -c $DIR/phpunit.xml $DIR
+  php $PHPUNITPHAR_PATH -c $DIR/phpunit.xml $DIR $EXTRA_PARAMS
+  exit 1;
 
   # Back to working DIR.
   cd $DIR;
@@ -97,7 +131,7 @@ function callPhpUnitTesting() {
 
   # Inform.
   echo "";
-  echo "<============== PHPUnit === finished"
+  echo "<============== PHPUnit <== finished"
   echo "";
 }
 
@@ -116,7 +150,7 @@ function callSamiGeneration() {
 
   # Inform.
   echo "";
-  echo "<============== SAMI === finished"
+  echo "<============== SAMI <== finished"
   echo "";
 }
 
@@ -154,7 +188,7 @@ function callGitPush() {
 
   # Inform.
   echo "";
-  echo "<============== GIT === finished"
+  echo "<============== GIT <== finished"
   echo ""
 }
 
@@ -203,7 +237,7 @@ function callZipping() {
 
   # Inform.
   echo "";
-  echo "<============== ZIP === finished"
+  echo "<============== ZIP <== finished"
   echo ""
 }
 
@@ -214,43 +248,49 @@ PARAM_CALL_TESTS=false
 PARAM_CALL_SAMI=false
 PARAM_CALL_ZIP=false
 PARAM_CALL_GIT=false
+PARAM_SNIFF_URI=false
+PARAM_PHPUNIT_FILTER=""
 
 # Find params.
 while [ "$1" != "" ]; do
-    case $1 in
-        -s | --sniff | --sniffs | --sniffing ) shift
-                                               PARAM_CALL_SNIFFING=true
-                                               ;;
-        -t | --test | --tests | --testing )    PARAM_CALL_TESTS=true
-                                               ;;
-        -m | --sami )                          PARAM_CALL_SAMI=true
-                                               ;;
-        -z | --zip )                           PARAM_CALL_ZIP=true
-                                               ;;
-        -g | --git )                           PARAM_CALL_GIT=true
-                                               ;;
-        -st )                                  PARAM_CALL_SNIFFING=true
-                                               PARAM_CALL_TESTS=true
-                                               ;;
-        -stm )                                 PARAM_CALL_SNIFFING=true
-                                               PARAM_CALL_TESTS=true
-                                               PARAM_CALL_SAMI=true
-                                               ;;
-        -stmz )                                PARAM_CALL_SNIFFING=true
-                                               PARAM_CALL_TESTS=true
-                                               PARAM_CALL_SAMI=true
-                                               PARAM_CALL_ZIP=true
-                                               ;;
-        -a | --all | -stmzg )                  PARAM_CALL_SNIFFING=true
-                                               PARAM_CALL_TESTS=true
-                                               PARAM_CALL_SAMI=true
-                                               PARAM_CALL_ZIP=true
-                                               PARAM_CALL_GIT=true
-                                               ;;
-        * )                                    PARAM_SHOW_HELP=true
-                                               ;;
-    esac
-    shift
+  case $1 in
+    -s | --sniff | --sniffs | --sniffing ) shift
+                                           PARAM_CALL_SNIFFING=true
+                                           ;;
+    -t | --test | --tests | --testing )    PARAM_CALL_TESTS=true
+                                           ;;
+    -m | --sami )                          PARAM_CALL_SAMI=true
+                                           ;;
+    -z | --zip )                           PARAM_CALL_ZIP=true
+                                           ;;
+    -g | --git )                           PARAM_CALL_GIT=true
+                                           ;;
+    -st )                                  PARAM_CALL_SNIFFING=true
+                                           PARAM_CALL_TESTS=true
+                                           ;;
+    -stm )                                 PARAM_CALL_SNIFFING=true
+                                           PARAM_CALL_TESTS=true
+                                           PARAM_CALL_SAMI=true
+                                           ;;
+    -stmz )                                PARAM_CALL_SNIFFING=true
+                                           PARAM_CALL_TESTS=true
+                                           PARAM_CALL_SAMI=true
+                                           PARAM_CALL_ZIP=true
+                                           ;;
+    -a | --all | -stmzg )                  PARAM_CALL_SNIFFING=true
+                                           PARAM_CALL_TESTS=true
+                                           PARAM_CALL_SAMI=true
+                                           PARAM_CALL_ZIP=true
+                                           PARAM_CALL_GIT=true
+                                           ;;
+    --sniffUri )                           PARAM_SNIFF_URI=$2
+                                           ;;
+    --phputFilter )                        PARAM_PHPUNIT_FILTER=$2
+                                           ;;
+    * )                                    PARAM_SHOW_HELP=true
+                                           ;;
+  esac
+  shift
 done
 
 # If none parameters given.
@@ -261,7 +301,8 @@ else
 fi
 
 # Find other variables.
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+# DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+DIR=$PWD
 VENDOR=$(basename $(dirname $DIR))
 APP=$(basename $DIR)
 VERSION=`php -r 'echo json_decode(file_get_contents("composer.json"))->version;'`
@@ -273,20 +314,20 @@ cd $DIR
 
 # Call apps.
 if [ "$PARAM_SHOW_HELP" = true ] ; then
-    showHelp
+  showHelp
 fi
 if [ "$PARAM_CALL_SNIFFING" = true ] ; then
-    callPhpCodeSniffing
+  callPhpCodeSniffing
 fi
 if [ "$PARAM_CALL_TESTS" = true ] ; then
-    callPhpUnitTesting
+  callPhpUnitTesting
 fi
 if [ "$PARAM_CALL_SAMI" = true ] ; then
-    callSamiGeneration
+  callSamiGeneration
 fi
 if [ "$PARAM_CALL_ZIP" = true ] ; then
-    callZipping
+  callZipping
 fi
 if [ "$PARAM_CALL_GIT" = true ] ; then
-    callGitPush
+  callGitPush
 fi
