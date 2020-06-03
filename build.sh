@@ -3,7 +3,7 @@
 # Builder bash App by @przeslijmi.
 #
 # @author  przeslijmi@gmail.com
-# @version v2.2.0
+# @version v2.2.1
 #
 # # Usage
 # After filling up settings in build.sh.config section call in bash:
@@ -11,10 +11,7 @@
 # ```
 # bash build.sh -help
 # ```
-
-# Include configs
-. build.sh.config
-
+#
 # Function to show all help.
 function showHelp() {
 
@@ -22,7 +19,7 @@ function showHelp() {
   echo "=============== Show Help ==> started"
   echo "";
 
-  echo "This is @przeslijmi Bash Builder v2.2.0"
+  echo "This is @przeslijmi Bash Builder v2.2.1"
   echo "";
 
   echo "The following operations can be performed:"
@@ -34,11 +31,12 @@ function showHelp() {
   echo "  -st, -stm, -stmz, -stmzg            Joined commands from above"
   echo "  -a, --all                           Execute all commands (equal to stmzg)"
   echo "  -h, -v, --help                      Show this screen"
+  echo "  --gitInfoExclude \"default\"          Replace git/info/exlude with given contents"
   echo "";
 
   echo "The following extra params can be used:"
-  echo "  -sniffUri    Alternative URI settings for Sniffing"
-  echo "  -phputFilter Filter param for PHP Unit Testing"
+  echo "  --sniffUri    Alternative URI settings for Sniffing"
+  echo "  --phputFilter Filter param for PHP Unit Testing"
   echo "";
 
   echo "<============== Show Help <== finished"
@@ -108,13 +106,13 @@ function callPhpUnitTesting() {
   ## Info on command.
   echo "== INFO ON COMMANDS USED";
   echo "cd ../../../"
-  echo "php $PHPUNITPHAR_PATH -c $DIR/phpunit.xml $EXTRA_PARAMS"
+  echo "php $PHPUNITPHAR_PATH -c $DIR/phpunit.xml --testSuite TestSuite $EXTRA_PARAMS"
   echo "== END INFO";
   echo "==";
 
   # Call PHP Unit.
   cd "../../../"
-  php $PHPUNITPHAR_PATH -c $DIR/phpunit.xml $DIR $EXTRA_PARAMS
+  php $PHPUNITPHAR_PATH -c "$DIR/phpunit.xml" $EXTRA_PARAMS
   exit 1;
 
   # Back to working DIR.
@@ -214,9 +212,10 @@ function callZipping() {
 
   # Pack sami.
   echo "Creating sami archive at " $ZIP_CODE_PATH
+
   printf "${COLOR_GREEN}"
   cd $DIR/.sami/build/
-  "$ZIP_PACKER_PATH" "a" "$ZIP_SAMI_PATH" "*"
+  "$ZIP_PACKER_PATH"  "a" "$ZIP_SAMI_PATH" "*"
   printf "${COLOR_NONE}\n\n"
 
   # Delete sami sources.
@@ -241,6 +240,31 @@ function callZipping() {
   echo ""
 }
 
+# Function that overwrites git/info/exlude file
+function callOverwriteFileGitInfo() {
+
+  # Start OVERWRITE.
+  echo "";
+  echo "=============== OVERWRITE GIT/INFO/EXCLUDE ==> started"
+  echo "";
+
+  # Lvd.
+  SOURCE_FILE_PATH="${THISDIR}/resources/git-info-exclude.${PARAM_GIT_INFO_EXCLUDE}.txt"
+  DESTINATION_FILE_PATH="${DIR}/.git/info/exclude"
+
+  # Inform.
+  echo "SOURCE_FILE_PATH: ${SOURCE_FILE_PATH}";
+  echo "DESTINATION_FILE_PATH: ${DESTINATION_FILE_PATH}";
+
+  # Copy.
+  cp -R "$SOURCE_FILE_PATH" "$DESTINATION_FILE_PATH"
+
+  # Inform.
+  echo "";
+  echo "<============== OVERWRITE GIT/INFO/EXCLUDE <== finished"
+  echo ""
+}
+
 # Internal variables.
 PARAM_SHOW_HELP=false
 PARAM_CALL_SNIFFING=false
@@ -248,6 +272,7 @@ PARAM_CALL_TESTS=false
 PARAM_CALL_SAMI=false
 PARAM_CALL_ZIP=false
 PARAM_CALL_GIT=false
+PARAM_GIT_INFO_EXCLUDE=false
 PARAM_SNIFF_URI=false
 PARAM_PHPUNIT_FILTER=""
 
@@ -283,6 +308,8 @@ while [ "$1" != "" ]; do
                                            PARAM_CALL_ZIP=true
                                            PARAM_CALL_GIT=true
                                            ;;
+    --gitInfoExclude )                     PARAM_GIT_INFO_EXCLUDE=$2
+                                           ;;
     --sniffUri )                           PARAM_SNIFF_URI=$2
                                            ;;
     --phputFilter )                        PARAM_PHPUNIT_FILTER=$2
@@ -294,20 +321,23 @@ while [ "$1" != "" ]; do
 done
 
 # If none parameters given.
-if [ "$PARAM_CALL_SNIFFING" = false ] && [ "$PARAM_CALL_TESTS" = false ] && [ "$PARAM_CALL_SAMI" = false ] && [ "$PARAM_CALL_ZIP" = false ] && [ "$PARAM_CALL_GIT" = false ] ; then
+if [ "$PARAM_CALL_SNIFFING" = false ] && [ "$PARAM_CALL_TESTS" = false ] && [ "$PARAM_CALL_SAMI" = false ] && [ "$PARAM_CALL_ZIP" = false ] && [ "$PARAM_CALL_GIT" = false ] && [ "$PARAM_GIT_INFO_EXCLUDE" = false ] ; then
   PARAM_SHOW_HELP=true
 else
   PARAM_SHOW_HELP=false
 fi
 
 # Find other variables.
-# DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+THISDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 DIR=$PWD
 VENDOR=$(basename $(dirname $DIR))
 APP=$(basename $DIR)
 VERSION=`php -r 'echo json_decode(file_get_contents("composer.json"))->version;'`
 COLOR_GREEN='\033[0;32m'
 COLOR_NONE='\033[0m'
+
+# Include configs
+. ${THISDIR}/build.sh.config
 
 # Make sure to move to dir in which this bash is located
 cd $DIR
@@ -330,4 +360,7 @@ if [ "$PARAM_CALL_ZIP" = true ] ; then
 fi
 if [ "$PARAM_CALL_GIT" = true ] ; then
   callGitPush
+fi
+if [ "$PARAM_GIT_INFO_EXCLUDE" != false ] ; then
+  callOverwriteFileGitInfo
 fi
