@@ -3,7 +3,7 @@
 # Builder bash App by @przeslijmi.
 #
 # @author  przeslijmi@gmail.com
-# @version v2.2.1
+# @version v2.3.0
 #
 # # Usage
 # After filling up settings in build.sh.config section call in bash:
@@ -19,7 +19,7 @@ function showHelp() {
   echo "=============== Show Help ==> started"
   echo "";
 
-  echo "This is @przeslijmi Bash Builder v2.2.1"
+  echo "This is @przeslijmi Bash Builder v2.3.0"
   echo "";
 
   echo "The following operations can be performed:"
@@ -37,6 +37,7 @@ function showHelp() {
   echo "The following extra params can be used:"
   echo "  --sniffUri    Alternative URI settings for Sniffing"
   echo "  --phputFilter Filter param for PHP Unit Testing"
+  echo "  --vendor      Default \"yes\". Set to \"no\" if app is not in vendor."
   echo "";
 
   echo "<============== Show Help <== finished"
@@ -103,15 +104,31 @@ function callPhpUnitTesting() {
     EXTRA_PARAMS=" --filter '$PARAM_PHPUNIT_FILTER'";
   fi
 
+  ## Set vendor param to default value (if missing).
+  if [ "$PARAM_VENDOR" != "no" ]
+  then
+    PARAM_VENDOR="yes";
+  fi
+
   ## Info on command.
   echo "== INFO ON COMMANDS USED";
-  echo "cd ../../../"
+
+  if [ "$PARAM_VENDOR" = "yes" ]
+  then
+    echo "cd ../../../"
+  fi
+
   echo "php $PHPUNITPHAR_PATH -c $DIR/phpunit.xml --testSuite TestSuite $EXTRA_PARAMS"
   echo "== END INFO";
   echo "==";
 
+  # Change dir to app top.
+  if [ "$PARAM_VENDOR" = "yes" ]
+  then
+    cd "../../../"
+  fi
+
   # Call PHP Unit.
-  cd "../../../"
   php $PHPUNITPHAR_PATH -c "$DIR/phpunit.xml" $EXTRA_PARAMS
   exit 1;
 
@@ -313,6 +330,8 @@ while [ "$1" != "" ]; do
     --sniffUri )                           PARAM_SNIFF_URI=$2
                                            ;;
     --phputFilter )                        PARAM_PHPUNIT_FILTER=$2
+                                           ;;
+    --vendor )                             PARAM_VENDOR=$2
                                            ;;
     * )                                    PARAM_SHOW_HELP=true
                                            ;;
